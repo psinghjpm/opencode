@@ -7,12 +7,17 @@ export const PrCommand = cmd({
   command: "pr <number>",
   describe: "fetch and checkout a GitHub PR branch, then run opencode",
   builder: (yargs) =>
-    yargs.positional("number", {
-      type: "number",
-      describe: "PR number to checkout",
-      demandOption: true,
-    }),
-  async handler(args) {
+    yargs
+      .positional("number", {
+        type: "number",
+        describe: "PR number to checkout",
+        demandOption: true,
+      })
+      .option("NoLaunch", {
+        type: "boolean",
+        describe: "checkout the PR branch without launching opencode TUI",
+        default: false,
+      }),
     await Instance.provide({
       directory: process.cwd(),
       async fn() {
@@ -88,6 +93,11 @@ export const PrCommand = cmd({
 
         UI.println(`Successfully checked out PR #${prNumber} as branch '${localBranchName}'`)
         UI.println()
+        if (args.NoLaunch) {
+          UI.println(`PR #${prNumber} checked out. Skipping launch.`)
+          process.exit(0);
+        }
+
         UI.println("Starting opencode...")
         UI.println()
 

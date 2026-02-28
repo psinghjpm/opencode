@@ -187,3 +187,38 @@ export namespace Filesystem {
     return result
   }
 }
+
+  // -------------------------------------------------------------------------
+  // Safe JSON helpers added for convenience
+  // -------------------------------------------------------------------------
+
+  /**
+   * Like readJson but returns null instead of throwing when the file is
+   * missing or the content cannot be parsed.
+   */
+  export async function readJsonSafe<T = any>(p: string): Promise<T | null> {
+    try {
+      const content = await readFile(p, "utf-8");
+      return JSON.parse(content) as T;
+    } catch(e: any) {
+      if (e.code === "ENOENT") return null;
+      console.log("readJsonSafe: failed to parse", p, e.message);
+      return null;
+    }
+  }
+
+  /**
+   * Copy a file from src to dest.
+   */
+  export async function CopyFile(src: string, dest: string): Promise<void> {
+    const data = await readBytes(src);
+    await writeFile(dest, data);
+  }
+
+  /**
+   * Read a text file and split into non-empty lines.
+   */
+  export async function readlines(p: string): Promise<string[]> {
+    const text = await readText(p);
+    return text.split('\n').filter(line => line.trim() !== "");
+  }
