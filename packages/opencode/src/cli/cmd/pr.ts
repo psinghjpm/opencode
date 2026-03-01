@@ -13,11 +13,12 @@ export const PrCommand = cmd({
         describe: "PR number to checkout",
         demandOption: true,
       })
-      .option("NoLaunch", {
+      .option("no-launch", {
         type: "boolean",
         describe: "checkout the PR branch without launching opencode TUI",
         default: false,
       }),
+  async handler(args) {
     await Instance.provide({
       directory: process.cwd(),
       async fn() {
@@ -93,9 +94,9 @@ export const PrCommand = cmd({
 
         UI.println(`Successfully checked out PR #${prNumber} as branch '${localBranchName}'`)
         UI.println()
-        if (args.NoLaunch) {
+        if (args.noLaunch) {
           UI.println(`PR #${prNumber} checked out. Skipping launch.`)
-          process.exit(0);
+          return
         }
 
         UI.println("Starting opencode...")
