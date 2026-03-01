@@ -1,4 +1,4 @@
-import { chmod, mkdir, readFile, writeFile } from "fs/promises"
+import { chmod, copyFile as fsCopyFile, mkdir, readFile, writeFile } from "fs/promises"
 import { createWriteStream, existsSync, statSync } from "fs"
 import { lookup } from "mime-types"
 import { realpathSync } from "fs"
@@ -6,6 +6,7 @@ import { dirname, join, relative } from "path"
 import { Readable } from "stream"
 import { pipeline } from "stream/promises"
 import { Glob } from "./glob"
+import { Log } from "./log"
 
 export namespace Filesystem {
   // Fast sync version for metadata checks
@@ -185,5 +186,43 @@ export namespace Filesystem {
       current = parent
     }
     return result
+  }
+
+  // -------------------------------------------------------------------------
+  // Safe JSON helpers
+  // -------------------------------------------------------------------------
+
+  /**
+   * Like readJson but returns null instead of throwing when the file is
+   * missing or the content cannot be parsed.
+   */
+  export async function readJsonSafe<T = any>(p: string): Promise<T | null> {
+    try {
+      const content = await readFile(p, "utf-8")
+      return JSON.parse(content) as T
+    } catch (e: unknown) {
+      if (isEnoent(e)) return null
+      Log.create({ service: "filesystem" }).warn("readJsonSafe: failed to parse", {
+        path: p,
+        error: e instanceof Error ? e.message : String(e),
+      })
+      return null
+    }
+  }
+
+  /**
+   * Copy a file from src to dest, creating parent directories as needed.
+   */
+  export async function copyFile(src: string, dest: string): Promise<void> {
+    await mkdir(dirname(dest), { recursive: true })
+    await fsCopyFile(src, dest)
+  }
+
+  /**
+   * Read a text file and split into non-empty lines. Handles CRLF line endings.
+   */
+  export async function readLines(p: string): Promise<string[]> {
+    const text = await readText(p)
+    return text.split(/\r?\n/).filter((line) => line.trim() !== "")
   }
 }
